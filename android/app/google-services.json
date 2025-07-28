@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "386091954658",
+    "project_id": "kaadu-wishlist",
+    "storage_bucket": "kaadu-wishlist.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:386091954658:android:cc26afc891c0bea0fd89bb",
+        "android_client_info": {
+          "package_name": "com.example.kaadu_organics_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAqYeG1nCYnu_rvcalKt9IVPSoSvOY90lk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

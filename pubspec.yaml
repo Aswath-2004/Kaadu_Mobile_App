@@ -1,0 +1,70 @@
+name: kaadu_organics_app
+description: A new Flutter project for Kaadu Organics.
+
+# The following line ensures that the package is not accidentally published to
+# pub.dev. To publish one, remove this line and release to pub.dev.
+publish_to: "none" # Remove this line if you intend to publish to pub.dev
+
+environment:
+  sdk: ">=3.0.0 <4.0.0" # Ensure this matches your Flutter SDK version compatibility
+
+dependencies:
+  flutter:
+    sdk: flutter
+  http: ^1.2.0 # Use the latest stable version
+  provider: ^6.0.5 # Or the latest stable version
+  razorpay_flutter: ^1.3.0 # NEW: Added Razorpay dependency
+  html: ^0.15.0
+  cupertino_icons: ^1.0.2
+  google_fonts: ^6.1.0
+  carousel_slider: ^5.1.1
+  intl: ^0.19.0
+  uuid: ^4.5.1
+  flutter_html: ^3.0.0-beta.2 # NEW: Added for HTML rendering # Added for rendering HTML content
+  # NEW: Firebase dependencies for Firestore integration
+  firebase_core: ^3.2.0 # Use the latest compatible version
+  firebase_auth: ^5.1.0 # Use the latest compatible version
+  cloud_firestore: ^5.0.0 # Use the latest compatible version
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^2.0.0
+
+# Removed dependency_overrides as we are now using the latest version
+# dependency_overrides:
+#   carousel_slider: 4.0.0
+
+# The following section is specific to Flutter.
+flutter:
+  uses-material-design: true
+
+  # To add assets to your application, add an assets section, like this:
+  #assets:
+  # - assets/ # Assuming you have an assets folder
+
+  # An image asset can refer to one or more resolution-specific "variants", see
+  # https://flutter.dev/assets-and-images/#resolution-aware.
+
+  # For details regarding adding assets from package dependencies, see
+  # https://flutter.dev/assets-and-images/#from-packages
+
+  # To add custom fonts to your application, add a fonts section here,
+  # in this "flutter" section. Each entry in this list should have a
+  # "family" key with the font family name, and a "fonts" key with a
+  # list giving the asset and other descriptors for the font. For
+  # example:
+  # fonts:
+  #   - family: Schyler
+  #     fonts:
+  #       - asset: fonts/Schyler-Regular.ttf
+  #       - asset: fonts/Schyler-Italic.ttf
+  #         style: italic
+  #   - family: Trajan Pro
+  #     fonts:
+  #       - asset: fonts/TrajanPro.ttf
+  #       - asset: fonts/TrajanPro_Bold.ttf
+  #         weight: 700
+  #
+  # For details regarding fonts from package dependencies,
+  # see https://flutter.dev/custom-fonts/#from-packages

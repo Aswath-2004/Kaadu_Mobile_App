@@ -2,6 +2,8 @@
 import 'package:flutter/material.dart';
 import 'package:kaadu_organics_app/models.dart'; // Import the Address model
 import 'package:uuid/uuid.dart'; // For generating unique IDs
+import 'package:provider/provider.dart'; // NEW: Import Provider
+import 'package:kaadu_organics_app/providers/address_provider.dart'; // NEW: Import AddressProvider
 
 class AddEditAddressScreen extends StatefulWidget {
   final Address? address; // Nullable for adding new address
@@ -36,8 +38,8 @@ class _AddEditAddressScreenState extends State<AddEditAddressScreen> {
         TextEditingController(text: widget.address?.phoneNumber ?? '');
     _streetAddress1Controller =
         TextEditingController(text: widget.address?.streetAddress1 ?? '');
-    _streetAddress2Controller =
-        TextEditingController(text: widget.address?.streetAddress2 ?? '');
+    _streetAddress2Controller = TextEditingController(
+        text: widget.address?.streetAddress2 ?? ''); // Fixed typo
     _cityController = TextEditingController(text: widget.address?.city ?? '');
     _stateController = TextEditingController(text: widget.address?.state ?? '');
     _postalCodeController =
@@ -64,8 +66,10 @@ class _AddEditAddressScreenState extends State<AddEditAddressScreen> {
     super.dispose();
   }
 
-  void _saveAddress() {
+  void _saveAddress() async {
     if (_formKey.currentState!.validate()) {
+      final addressProvider =
+          Provider.of<AddressProvider>(context, listen: false);
       String id = widget.address?.id ?? const Uuid().v4();
       String finalAddressType = _selectedAddressType == 'Other'
           ? _otherAddressTypeController.text
@@ -84,34 +88,15 @@ class _AddEditAddressScreenState extends State<AddEditAddressScreen> {
         isDefault: _isDefault,
       );
 
-      // Update the global dummyAddressesNotifier
-      final currentAddresses = List<Address>.from(dummyAddressesNotifier.value);
       if (widget.address == null) {
         // Adding new address
-        currentAddresses.add(newAddress);
+        await addressProvider.addAddress(newAddress);
       } else {
         // Editing existing address
-        final index =
-            currentAddresses.indexWhere((addr) => addr.id == newAddress.id);
-        if (index != -1) {
-          currentAddresses[index] = newAddress;
-        }
+        await addressProvider.updateAddress(newAddress);
       }
 
-      // Ensure only one address is default if the new/edited one is set to default
-      if (newAddress.isDefault) {
-        for (int i = 0; i < currentAddresses.length; i++) {
-          if (currentAddresses[i].id != newAddress.id) {
-            currentAddresses[i].isDefault = false;
-          }
-        }
-      } else if (!currentAddresses.any((addr) => addr.isDefault) &&
-          currentAddresses.isNotEmpty) {
-        // If no address is default after editing, set the first one as default
-        currentAddresses.first.isDefault = true;
-      }
-
-      dummyAddressesNotifier.value = currentAddresses; // Trigger update
+      if (!mounted) return; // Check if the widget is still mounted
       Navigator.pop(context, newAddress);
     }
   }
@@ -267,7 +252,8 @@ class _AddEditAddressScreenState extends State<AddEditAddressScreen> {
                   .bodyMedium
                   ?.color
                   ?.withAlpha((255 * 0.7).round())),
-          prefixIcon: Icon(icon, color: const Color(0xFF5CB85C)),
+          prefixIcon:
+              Icon(icon, color: const Color(0xFF5CB85C)), // Removed const
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12.0),
             borderSide: BorderSide.none,
@@ -298,8 +284,8 @@ class _AddEditAddressScreenState extends State<AddEditAddressScreen> {
       child: DropdownButtonFormField<String>(
         value: _selectedAddressType,
         decoration: InputDecoration(
-          prefixIcon:
-              Icon(Icons.category_rounded, color: const Color(0xFF5CB85C)),
+          prefixIcon: const Icon(Icons.category_rounded,
+              color: Color(0xFF5CB85C)), // Added const
           labelText: 'Address Type',
           labelStyle: TextStyle(
               color: Theme.of(context)

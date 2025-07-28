@@ -188,6 +188,65 @@ class Address {
     address += '\n$city, $state $postalCode\nPhone: $phoneNumber';
     return address;
   }
+
+  // NEW: toJson method for Address model
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'fullName': fullName,
+      'phoneNumber': phoneNumber,
+      'streetAddress1': streetAddress1,
+      'streetAddress2': streetAddress2,
+      'city': city,
+      'state': state,
+      'postalCode': postalCode,
+      'addressType': addressType,
+      'isDefault': isDefault,
+    };
+  }
+
+  // NEW: fromJson factory for Address model
+  factory Address.fromJson(Map<String, dynamic> json) {
+    return Address(
+      id: json['id'] as String,
+      fullName: json['fullName'] as String,
+      phoneNumber: json['phoneNumber'] as String,
+      streetAddress1: json['streetAddress1'] as String,
+      streetAddress2: json['streetAddress2'] as String? ?? '',
+      city: json['city'] as String,
+      state: json['state'] as String,
+      postalCode: json['postalCode'] as String,
+      addressType: json['addressType'] as String? ?? 'Home',
+      isDefault: json['isDefault'] as bool? ?? false,
+    );
+  }
+
+  // NEW: copyWith method for Address model
+  Address copyWith({
+    String? id,
+    String? fullName,
+    String? phoneNumber,
+    String? streetAddress1,
+    String? streetAddress2,
+    String? city,
+    String? state,
+    String? postalCode,
+    String? addressType,
+    bool? isDefault,
+  }) {
+    return Address(
+      id: id ?? this.id,
+      fullName: fullName ?? this.fullName,
+      phoneNumber: phoneNumber ?? this.phoneNumber,
+      streetAddress1: streetAddress1 ?? this.streetAddress1,
+      streetAddress2: streetAddress2 ?? this.streetAddress2,
+      city: city ?? this.city,
+      state: state ?? this.state,
+      postalCode: postalCode ?? this.postalCode,
+      addressType: addressType ?? this.addressType,
+      isDefault: isDefault ?? this.isDefault,
+    );
+  }
 }
 
 // New Review Model
@@ -260,6 +319,57 @@ class PaymentMethod {
     }
     return type;
   }
+
+  // NEW: toJson method for PaymentMethod model
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'type': type,
+      'lastFourDigits': lastFourDigits,
+      'bankName': bankName,
+      'upiId': upiId,
+      'expiryDate': expiryDate,
+      'cardHolderName': cardHolderName,
+      'isDefault': isDefault,
+    };
+  }
+
+  // NEW: fromJson factory for PaymentMethod model
+  factory PaymentMethod.fromJson(Map<String, dynamic> json) {
+    return PaymentMethod(
+      id: json['id'] as String,
+      type: json['type'] as String,
+      lastFourDigits: json['lastFourDigits'] as String? ?? '',
+      bankName: json['bankName'] as String? ?? '',
+      upiId: json['upiId'] as String? ?? '',
+      expiryDate: json['expiryDate'] as String? ?? '',
+      cardHolderName: json['cardHolderName'] as String? ?? '',
+      isDefault: json['isDefault'] as bool? ?? false,
+    );
+  }
+
+  // NEW: copyWith method for PaymentMethod model
+  PaymentMethod copyWith({
+    String? id,
+    String? type,
+    String? lastFourDigits,
+    String? bankName,
+    String? upiId,
+    String? expiryDate,
+    String? cardHolderName,
+    bool? isDefault,
+  }) {
+    return PaymentMethod(
+      id: id ?? this.id,
+      type: type ?? this.type,
+      lastFourDigits: lastFourDigits ?? this.lastFourDigits,
+      bankName: bankName ?? this.bankName,
+      upiId: upiId ?? this.upiId,
+      expiryDate: expiryDate ?? this.expiryDate,
+      cardHolderName: cardHolderName ?? this.cardHolderName,
+      isDefault: isDefault ?? this.isDefault,
+    );
+  }
 }
 
 // New BankDetails Model
@@ -275,6 +385,26 @@ class BankDetails {
     required this.ifscCode,
     required this.accountHolderName,
   });
+
+  // NEW: toJson for BankDetails
+  Map<String, dynamic> toJson() {
+    return {
+      'bankName': bankName,
+      'accountNumber': accountNumber,
+      'ifscCode': ifscCode,
+      'accountHolderName': accountHolderName,
+    };
+  }
+
+  // NEW: fromJson for BankDetails
+  factory BankDetails.fromJson(Map<String, dynamic> json) {
+    return BankDetails(
+      bankName: json['bankName'] as String,
+      accountNumber: json['accountNumber'] as String,
+      ifscCode: json['ifscCode'] as String,
+      accountHolderName: json['accountHolderName'] as String,
+    );
+  }
 }
 
 // Updated User Account Model
@@ -354,9 +484,55 @@ class UserAccount {
       bankDetails: bankDetails ?? this.bankDetails,
     );
   }
+
+  // NEW: toJson method for UserAccount model
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'email': email,
+      'phoneNumber': phoneNumber,
+      'profileImageUrl': profileImageUrl,
+      'isActive': isActive,
+      'isSeller': isSeller,
+      'isSellerProfileComplete': isSellerProfileComplete,
+      'storeName': storeName,
+      'sellerAddress1': sellerAddress1,
+      'sellerAddress2': sellerAddress2,
+      'sellerCity': sellerCity,
+      'sellerState': sellerState,
+      'sellerPostalCode': sellerPostalCode,
+      'bankDetails': bankDetails?.toJson(), // Convert BankDetails to JSON
+    };
+  }
+
+  // NEW: fromJson factory for UserAccount model
+  factory UserAccount.fromJson(Map<String, dynamic> json) {
+    return UserAccount(
+      id: json['id'] as String,
+      name: json['name'] as String,
+      email: json['email'] as String,
+      phoneNumber: json['phoneNumber'] as String,
+      profileImageUrl: json['profileImageUrl'] as String? ??
+          'https://placehold.co/140x140/34A853/FFFFFF?text=A',
+      isActive: json['isActive'] as bool? ?? false,
+      isSeller: json['isSeller'] as bool? ?? false,
+      isSellerProfileComplete:
+          json['isSellerProfileComplete'] as bool? ?? false,
+      storeName: json['storeName'] as String?,
+      sellerAddress1: json['sellerAddress1'] as String?,
+      sellerAddress2: json['sellerAddress2'] as String?,
+      sellerCity: json['sellerCity'] as String?,
+      sellerState: json['sellerState'] as String?,
+      sellerPostalCode: json['sellerPostalCode'] as String?,
+      bankDetails: json['bankDetails'] != null
+          ? BankDetails.fromJson(json['bankDetails'])
+          : null,
+    );
+  }
 }
 
-// Dummy Data (for demonstration)
+// Dummy Data (for demonstration) - These will be removed as Firestore is integrated
 List<Product> dummyProducts = [
   Product(
     id: 'p1',

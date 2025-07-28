@@ -5,7 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:kaadu_organics_app/providers/product_provider.dart';
 import 'package:kaadu_organics_app/providers/wishlist_provider.dart';
 import 'package:kaadu_organics_app/providers/cart_provider.dart'; // NEW: Import CartProvider
-import 'package:flutter/foundation.dart'; // For debugPrint
+import 'package:kaadu_organics_app/providers/address_provider.dart'; // NEW: Import AddressProvider
 
 class HomeScreen extends StatefulWidget {
   final VoidCallback toggleTheme; // Add toggleTheme callback
@@ -17,12 +17,6 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final TextEditingController _searchController = TextEditingController();
-
-  // Helper to get the current default address
-  Address _getCurrentDefaultAddress(List<Address> addresses) {
-    return addresses.firstWhere((addr) => addr.isDefault,
-        orElse: () => addresses.first);
-  }
 
   // Helper to get the current active user
   UserAccount _getCurrentActiveUser(List<UserAccount> users) {
@@ -41,6 +35,8 @@ class _HomeScreenState extends State<HomeScreen> {
       Provider.of<WishlistProvider>(context, listen: false).fetchWishlist();
       Provider.of<CartProvider>(context, listen: false)
           .fetchCart(); // NEW: Fetch cart
+      Provider.of<AddressProvider>(context, listen: false)
+          .fetchAddresses(); // NEW: Fetch addresses
     });
   }
 
@@ -74,15 +70,13 @@ class _HomeScreenState extends State<HomeScreen> {
                 );
               },
             ),
-            // Listen to dummyAddressesNotifier for address updates
-            ValueListenableBuilder<List<Address>>(
-              valueListenable: dummyAddressesNotifier, // Corrected typo here
-              builder: (context, addresses, child) {
-                final currentAddress = _getCurrentDefaultAddress(addresses);
+            // Listen to AddressProvider for address updates
+            Consumer<AddressProvider>(
+              builder: (context, addressProvider, child) {
+                final currentAddress = addressProvider.getDefaultAddress();
                 return GestureDetector(
                   onTap: () async {
                     await Navigator.pushNamed(context, '/addresses');
-                    // No need for setState here, ValueListenableBuilder handles it
                   },
                   child: Padding(
                     padding: const EdgeInsets.symmetric(vertical: 4.0),
@@ -93,7 +87,9 @@ class _HomeScreenState extends State<HomeScreen> {
                         const SizedBox(width: 12.0),
                         Expanded(
                           child: Text(
-                            'Delivering to ${currentAddress.fullName} - Update location',
+                            currentAddress != null
+                                ? 'Delivering to ${currentAddress.fullName} - Update location'
+                                : 'No address set - Add location',
                             style: Theme.of(context)
                                 .textTheme
                                 .titleSmall
@@ -231,17 +227,14 @@ class _HomeScreenState extends State<HomeScreen> {
                                           category.imageUrl,
                                           fit: BoxFit.cover,
                                           errorBuilder:
-                                              (context, error, stackTrace) {
-                                            debugPrint(
-                                                'Error loading category image for ${category.name}: ${category.imageUrl}'); // DEBUG PRINT
-                                            return Container(
-                                              color: Colors.grey[700],
-                                              child: const Icon(
-                                                  Icons.broken_image,
-                                                  color: Colors.white,
-                                                  size: 30),
-                                            );
-                                          },
+                                              (context, error, stackTrace) =>
+                                                  Container(
+                                            color: Colors.grey[700],
+                                            child: const Icon(
+                                                Icons.broken_image,
+                                                color: Colors.white,
+                                                size: 30),
+                                          ),
                                         ),
                                       ),
                                     ),
@@ -475,7 +468,7 @@ class ProductCard extends StatelessWidget {
                           width: double.infinity,
                           errorBuilder: (context, error, stackTrace) {
                             debugPrint(
-                                'ProductCard: Failed to load image for product ${product.name}: ${product.imageUrl}'); // DEBUG PRINT
+                                'Failed to load image for product ${product.name}: ${product.imageUrl}'); // Debug print
                             return Container(
                               color: Colors.grey[700],
                               child: const Icon(Icons.image_not_supported,

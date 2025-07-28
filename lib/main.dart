@@ -30,6 +30,8 @@ import 'package:provider/provider.dart';
 import 'package:kaadu_organics_app/providers/product_provider.dart';
 import 'package:kaadu_organics_app/providers/wishlist_provider.dart';
 import 'package:kaadu_organics_app/providers/cart_provider.dart';
+import 'package:kaadu_organics_app/providers/address_provider.dart'; // NEW: Import AddressProvider
+import 'package:kaadu_organics_app/providers/payment_method_provider.dart'; // NEW: Import PaymentMethodProvider
 
 // Firebase imports
 import 'package:firebase_core/firebase_core.dart';
@@ -100,6 +102,22 @@ void main() async {
           // Add CartProvider
           ChangeNotifierProvider(
             create: (context) => CartProvider(
+              firestore: FirebaseFirestore.instance,
+              auth: FirebaseAuth.instance,
+              appId: appId,
+            ),
+          ),
+          // NEW: Add AddressProvider
+          ChangeNotifierProvider(
+            create: (context) => AddressProvider(
+              firestore: FirebaseFirestore.instance,
+              auth: FirebaseAuth.instance,
+              appId: appId,
+            ),
+          ),
+          // NEW: Add PaymentMethodProvider
+          ChangeNotifierProvider(
+            create: (context) => PaymentMethodProvider(
               firestore: FirebaseFirestore.instance,
               auth: FirebaseAuth.instance,
               appId: appId,

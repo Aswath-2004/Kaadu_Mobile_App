@@ -1,6 +1,8 @@
-// address_screen.dart (New File)
+// address_screen.dart (Updated File)
 import 'package:flutter/material.dart';
 import 'package:kaadu_organics_app/models.dart'; // Import the Address model
+import 'package:provider/provider.dart'; // NEW: Import Provider
+import 'package:kaadu_organics_app/providers/address_provider.dart'; // NEW: Import AddressProvider
 
 class AddressScreen extends StatefulWidget {
   const AddressScreen({super.key});
@@ -10,44 +12,32 @@ class AddressScreen extends StatefulWidget {
 }
 
 class _AddressScreenState extends State<AddressScreen> {
-  // Directly use the ValueNotifier's value for the list
-  List<Address> get _userAddresses => dummyAddressesNotifier.value;
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<AddressProvider>(context, listen: false).fetchAddresses();
+    });
+  }
 
   void _setDefaultAddress(String addressId) {
-    // Create a new list with the updated default status
-    final updatedAddresses = _userAddresses.map((address) {
-      return Address(
-        id: address.id,
-        fullName: address.fullName,
-        phoneNumber: address.phoneNumber,
-        streetAddress1: address.streetAddress1,
-        streetAddress2: address.streetAddress2,
-        city: address.city,
-        state: address.state,
-        postalCode: address.postalCode,
-        addressType: address.addressType,
-        isDefault: (address.id == addressId), // Set this address as default
-      );
-    }).toList();
-    dummyAddressesNotifier.value =
-        updatedAddresses; // Assign new list to trigger update
+    final addressProvider =
+        Provider.of<AddressProvider>(context, listen: false);
+    final addressToSetDefault =
+        addressProvider.addresses.firstWhere((addr) => addr.id == addressId);
+    addressProvider
+        .updateAddress(addressToSetDefault.copyWith(isDefault: true));
+    if (!mounted) return; // Guard against context use after async operation
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Default address updated!')),
     );
   }
 
   void _deleteAddress(String addressId) {
-    // Create a new list excluding the deleted address
-    final updatedAddresses =
-        _userAddresses.where((address) => address.id != addressId).toList();
-
-    // Ensure at least one address is default if any remain and no default is set
-    if (updatedAddresses.isNotEmpty &&
-        !updatedAddresses.any((addr) => addr.isDefault)) {
-      updatedAddresses.first.isDefault = true;
-    }
-    dummyAddressesNotifier.value =
-        updatedAddresses; // Assign new list to trigger update
+    final addressProvider =
+        Provider.of<AddressProvider>(context, listen: false);
+    addressProvider.deleteAddress(addressId);
+    if (!mounted) return; // Guard against context use after async operation
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Address deleted!')),
     );
@@ -55,56 +45,47 @@ class _AddressScreenState extends State<AddressScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final addressProvider = Provider.of<AddressProvider>(context);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('My Addresses'),
       ),
-      body: ValueListenableBuilder<List<Address>>(
-        valueListenable: dummyAddressesNotifier,
-        builder: (context, addresses, child) {
-          if (addresses.isEmpty) {
-            return Center(
-              child: Text(
-                'No addresses saved. Add one!',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    color: Theme.of(context)
-                        .textTheme
-                        .bodyLarge
-                        ?.color
-                        ?.withAlpha((255 * 0.5).round())),
-              ),
-            );
-          }
-          return ListView.builder(
-            padding: const EdgeInsets.all(16.0),
-            itemCount: addresses.length,
-            itemBuilder: (context, index) {
-              final address = addresses[index];
-              return AddressCard(
-                address: address,
-                onSetDefault: _setDefaultAddress,
-                onDelete: _deleteAddress,
-              );
-            },
-          );
-        },
-      ),
+      body: addressProvider.isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : addressProvider.errorMessage != null
+              ? Center(child: Text('Error: ${addressProvider.errorMessage}'))
+              : addressProvider.addresses.isEmpty
+                  ? Center(
+                      child: Text(
+                        'No addresses saved. Add one!',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            color: Theme.of(context)
+                                .textTheme
+                                .bodyLarge
+                                ?.color
+                                ?.withAlpha((255 * 0.5).round())),
+                      ),
+                    )
+                  : ListView.builder(
+                      padding: const EdgeInsets.all(16.0),
+                      itemCount: addressProvider.addresses.length,
+                      itemBuilder: (context, index) {
+                        final address = addressProvider.addresses[index];
+                        return AddressCard(
+                          address: address,
+                          onSetDefault: _setDefaultAddress,
+                          onDelete: _deleteAddress,
+                        );
+                      },
+                    ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () async {
-          // Navigate to add new address screen
           final newAddress =
               await Navigator.pushNamed(context, '/add_edit_address');
+          if (!mounted) return; // Check if the widget is still mounted
           if (newAddress != null && newAddress is Address) {
-            // Create a new list with the added address
-            final updatedAddresses =
-                List<Address>.from(dummyAddressesNotifier.value);
-            updatedAddresses.add(newAddress);
-            // If this is the first address, make it default
-            if (updatedAddresses.length == 1) {
-              updatedAddresses.first.isDefault = true;
-            }
-            dummyAddressesNotifier.value =
-                updatedAddresses; // Assign new list to trigger update
+            // AddressProvider.addAddress is already called in add_edit_address_screen
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('Address added successfully!')),
             );
@@ -229,8 +210,8 @@ class AddressCard extends StatelessWidget {
                       '/add_edit_address',
                       arguments: address,
                     );
-                    // In a real app, you'd update your state management or refresh data
-                    // For this dummy setup, we'll just show a snackbar for now.
+                    if (!context.mounted)
+                      return; // Check if the widget is still mounted
                     if (updatedAddress != null) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(

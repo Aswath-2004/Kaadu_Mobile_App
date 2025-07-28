@@ -1,4 +1,5 @@
 // lib/screens/checkout_screen.dart
+// rzp_test_SQtpGxikB1WOqM
 import 'package:flutter/material.dart';
 import 'package:kaadu_organics_app/models.dart'; // Import models for Address and PaymentMethod
 import 'package:provider/provider.dart';
@@ -6,6 +7,8 @@ import 'package:kaadu_organics_app/providers/cart_provider.dart'; // NEW: Import
 import 'package:kaadu_organics_app/services/api_service.dart'; // For creating WooCommerce order
 import 'package:razorpay_flutter/razorpay_flutter.dart'; // NEW: Import Razorpay
 import 'package:flutter/foundation.dart'; // For debugPrint
+import 'package:kaadu_organics_app/providers/address_provider.dart'; // NEW: Import AddressProvider
+import 'package:kaadu_organics_app/providers/payment_method_provider.dart'; // NEW: Import PaymentMethodProvider
 
 class CheckoutScreen extends StatefulWidget {
   const CheckoutScreen({super.key});
@@ -29,30 +32,16 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     super.initState();
     // Initialize with default address and payment method if available
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      final addressProvider =
+          Provider.of<AddressProvider>(context, listen: false);
+      final paymentMethodProvider =
+          Provider.of<PaymentMethodProvider>(context, listen: false);
+
+      // Set initial selected address and payment method from providers
       setState(() {
-        _selectedAddress = dummyAddressesNotifier.value.firstWhere(
-          (addr) => addr.isDefault,
-          orElse: () => dummyAddressesNotifier.value.isNotEmpty
-              ? dummyAddressesNotifier.value.first
-              : Address(
-                  // Fallback if no addresses exist
-                  id: 'default',
-                  fullName: 'Guest User',
-                  phoneNumber: 'N/A',
-                  streetAddress1: 'No Address Set',
-                  city: '',
-                  state: '',
-                  postalCode: '',
-                  addressType: 'Home',
-                ),
-        );
-        _selectedPaymentMethod = dummyPaymentMethods.firstWhere(
-          (method) => method.isDefault,
-          orElse: () => dummyPaymentMethods.isNotEmpty
-              ? dummyPaymentMethods.first
-              : PaymentMethod(
-                  id: 'default', type: 'Cash on Delivery'), // Fallback
-        );
+        _selectedAddress = addressProvider.getDefaultAddress();
+        _selectedPaymentMethod =
+            paymentMethodProvider.getDefaultPaymentMethod();
       });
     });
 
@@ -264,6 +253,16 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   @override
   Widget build(BuildContext context) {
     final cartProvider = Provider.of<CartProvider>(context);
+    final addressProvider = Provider.of<AddressProvider>(context);
+    final paymentMethodProvider = Provider.of<PaymentMethodProvider>(context);
+
+    // Update selected address and payment method in real-time
+    // Using setState here to trigger a rebuild when providers notify listeners
+    // This is crucial because _selectedAddress and _selectedPaymentMethod are State variables
+    // and need to be updated when the underlying provider data changes.
+    // This is done inside build, but only when the providers change, thanks to Provider.of.
+    _selectedAddress = addressProvider.getDefaultAddress();
+    _selectedPaymentMethod = paymentMethodProvider.getDefaultPaymentMethod();
 
     // Determine if the "Place Order" button should be enabled
     bool canPlaceOrder = cartProvider.cartItems.isNotEmpty &&
@@ -290,27 +289,13 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     Icons.location_on_rounded,
                     'Add/Select Address',
                     () async {
-                      final result =
-                          await Navigator.pushNamed(context, '/addresses');
-                      if (!mounted) return;
-                      if (result != null && result is Address) {
-                        setState(() {
-                          _selectedAddress = result;
-                        });
-                      }
+                      await Navigator.pushNamed(context, '/addresses');
                     },
                   )
                 : AddressSummaryCard(
                     address: _selectedAddress!,
                     onEdit: () async {
-                      final result =
-                          await Navigator.pushNamed(context, '/addresses');
-                      if (!mounted) return;
-                      if (result != null && result is Address) {
-                        setState(() {
-                          _selectedAddress = result;
-                        });
-                      }
+                      await Navigator.pushNamed(context, '/addresses');
                     },
                   ),
             const SizedBox(height: 24.0),
@@ -325,27 +310,13 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     Icons.payment_rounded,
                     'Add/Select Payment Method',
                     () async {
-                      final result = await Navigator.pushNamed(
-                          context, '/payment_methods');
-                      if (!mounted) return;
-                      if (result != null && result is PaymentMethod) {
-                        setState(() {
-                          _selectedPaymentMethod = result;
-                        });
-                      }
+                      await Navigator.pushNamed(context, '/payment_methods');
                     },
                   )
                 : PaymentMethodSummaryCard(
                     paymentMethod: _selectedPaymentMethod!,
                     onEdit: () async {
-                      final result = await Navigator.pushNamed(
-                          context, '/payment_methods');
-                      if (!mounted) return;
-                      if (result != null && result is PaymentMethod) {
-                        setState(() {
-                          _selectedPaymentMethod = result;
-                        });
-                      }
+                      await Navigator.pushNamed(context, '/payment_methods');
                     },
                   ),
             const SizedBox(height: 24.0),

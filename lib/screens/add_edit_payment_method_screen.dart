@@ -2,6 +2,8 @@
 import 'package:flutter/material.dart';
 import 'package:kaadu_organics_app/models.dart'; // Import the PaymentMethod model
 import 'package:uuid/uuid.dart'; // For generating unique IDs
+import 'package:provider/provider.dart'; // NEW: Import Provider
+import 'package:kaadu_organics_app/providers/payment_method_provider.dart'; // NEW: Import PaymentMethodProvider
 
 class AddEditPaymentMethodScreen extends StatefulWidget {
   final PaymentMethod? paymentMethod; // Nullable for adding new method
@@ -62,8 +64,10 @@ class _AddEditPaymentMethodScreenState
     super.dispose();
   }
 
-  void _savePaymentMethod() {
+  void _savePaymentMethod() async {
     if (_formKey.currentState!.validate()) {
+      final paymentMethodProvider =
+          Provider.of<PaymentMethodProvider>(context, listen: false);
       String id = widget.paymentMethod?.id ?? const Uuid().v4();
       PaymentMethod newMethod;
 
@@ -110,6 +114,16 @@ class _AddEditPaymentMethodScreenState
             isDefault: _isDefault,
           );
       }
+
+      if (widget.paymentMethod == null) {
+        // Adding new payment method
+        await paymentMethodProvider.addPaymentMethod(newMethod);
+      } else {
+        // Editing existing payment method
+        await paymentMethodProvider.updatePaymentMethod(newMethod);
+      }
+
+      if (!mounted) return; // Check if the widget is still mounted
       Navigator.pop(context, newMethod);
     }
   }
@@ -261,7 +275,8 @@ class _AddEditPaymentMethodScreenState
                   .bodyMedium
                   ?.color
                   ?.withAlpha((255 * 0.7).round())),
-          prefixIcon: Icon(icon, color: const Color(0xFF5CB85C)),
+          prefixIcon:
+              Icon(icon, color: const Color(0xFF5CB85C)), // Removed const
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12.0),
             borderSide: BorderSide.none,
@@ -291,8 +306,8 @@ class _AddEditPaymentMethodScreenState
       child: DropdownButtonFormField<String>(
         value: _selectedPaymentType,
         decoration: InputDecoration(
-          prefixIcon:
-              Icon(Icons.payment_rounded, color: const Color(0xFF5CB85C)),
+          prefixIcon: const Icon(Icons.payment_rounded,
+              color: Color(0xFF5CB85C)), // Added const
           labelText: 'Payment Type',
           labelStyle: TextStyle(
               color: Theme.of(context)

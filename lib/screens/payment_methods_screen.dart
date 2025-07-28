@@ -1,6 +1,8 @@
 // screens/payment_methods_screen.dart
 import 'package:flutter/material.dart';
 import 'package:kaadu_organics_app/models.dart'; // Import the PaymentMethod model
+import 'package:provider/provider.dart'; // NEW: Import Provider
+import 'package:kaadu_organics_app/providers/payment_method_provider.dart'; // NEW: Import PaymentMethodProvider
 
 class PaymentMethodsScreen extends StatefulWidget {
   const PaymentMethodsScreen({super.key});
@@ -10,29 +12,33 @@ class PaymentMethodsScreen extends StatefulWidget {
 }
 
 class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
-  // Use a local list for now. In a real app, this would come from state management.
-  List<PaymentMethod> _userPaymentMethods = List.from(dummyPaymentMethods);
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<PaymentMethodProvider>(context, listen: false)
+          .fetchPaymentMethods();
+    });
+  }
 
   void _setDefaultPaymentMethod(String methodId) {
-    setState(() {
-      for (var method in _userPaymentMethods) {
-        method.isDefault = (method.id == methodId);
-      }
-    });
+    final paymentMethodProvider =
+        Provider.of<PaymentMethodProvider>(context, listen: false);
+    final methodToSetDefault = paymentMethodProvider.paymentMethods
+        .firstWhere((method) => method.id == methodId);
+    paymentMethodProvider
+        .updatePaymentMethod(methodToSetDefault.copyWith(isDefault: true));
+    if (!mounted) return; // Guard against context use after async operation
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Default payment method updated!')),
     );
   }
 
   void _deletePaymentMethod(String methodId) {
-    setState(() {
-      _userPaymentMethods.removeWhere((method) => method.id == methodId);
-      // Ensure at least one method is default if any remain and no default is set
-      if (_userPaymentMethods.isNotEmpty &&
-          !_userPaymentMethods.any((method) => method.isDefault)) {
-        _userPaymentMethods.first.isDefault = true;
-      }
-    });
+    final paymentMethodProvider =
+        Provider.of<PaymentMethodProvider>(context, listen: false);
+    paymentMethodProvider.deletePaymentMethod(methodId);
+    if (!mounted) return; // Guard against context use after async operation
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Payment method deleted!')),
     );
@@ -40,46 +46,49 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final paymentMethodProvider = Provider.of<PaymentMethodProvider>(context);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Payment Methods'),
       ),
-      body: _userPaymentMethods.isEmpty
-          ? Center(
-              child: Text(
-                'No payment methods saved. Add one!',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    color: Theme.of(context)
-                        .textTheme
-                        .bodyLarge
-                        ?.color
-                        ?.withAlpha((255 * 0.5).round())),
-              ),
-            )
-          : ListView.builder(
-              padding: const EdgeInsets.all(16.0),
-              itemCount: _userPaymentMethods.length,
-              itemBuilder: (context, index) {
-                final method = _userPaymentMethods[index];
-                return PaymentMethodCard(
-                  paymentMethod: method,
-                  onSetDefault: _setDefaultPaymentMethod,
-                  onDelete: _deletePaymentMethod,
-                );
-              },
-            ),
+      body: paymentMethodProvider.isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : paymentMethodProvider.errorMessage != null
+              ? Center(
+                  child: Text('Error: ${paymentMethodProvider.errorMessage}'))
+              : paymentMethodProvider.paymentMethods.isEmpty
+                  ? Center(
+                      child: Text(
+                        'No payment methods saved. Add one!',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            color: Theme.of(context)
+                                .textTheme
+                                .bodyLarge
+                                ?.color
+                                ?.withAlpha((255 * 0.5).round())),
+                      ),
+                    )
+                  : ListView.builder(
+                      padding: const EdgeInsets.all(16.0),
+                      itemCount: paymentMethodProvider.paymentMethods.length,
+                      itemBuilder: (context, index) {
+                        final method =
+                            paymentMethodProvider.paymentMethods[index];
+                        return PaymentMethodCard(
+                          paymentMethod: method,
+                          onSetDefault: _setDefaultPaymentMethod,
+                          onDelete: _deletePaymentMethod,
+                        );
+                      },
+                    ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () async {
           final newMethod =
               await Navigator.pushNamed(context, '/add_edit_payment_method');
+          if (!mounted) return; // Check if the widget is still mounted
           if (newMethod != null && newMethod is PaymentMethod) {
-            setState(() {
-              _userPaymentMethods.add(newMethod);
-              // If this is the first method, make it default
-              if (_userPaymentMethods.length == 1) {
-                _userPaymentMethods.first.isDefault = true;
-              }
-            });
+            // PaymentMethodProvider.addPaymentMethod is already called in add_edit_payment_method_screen
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
                   content: Text('Payment method added successfully!')),
@@ -225,7 +234,8 @@ class PaymentMethodCard extends StatelessWidget {
                       '/add_edit_payment_method',
                       arguments: paymentMethod,
                     );
-                    // In a real app, you'd update your state management or refresh data
+                    if (!context.mounted)
+                      return; // Check if the widget is still mounted
                     if (updatedMethod != null) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(

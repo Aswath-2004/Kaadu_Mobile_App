@@ -1,6 +1,7 @@
 // rate_now_screen.dart
 import 'package:flutter/material.dart';
 import 'package:kaadu_organics_app/models.dart';
+import 'package:flutter/foundation.dart'; // For debugPrint
 
 class RateNowScreen extends StatefulWidget {
   final Order? order; // Made nullable for route initialization
@@ -71,15 +72,18 @@ class _RateNowScreenState extends State<RateNowScreen> {
                             width: 80,
                             height: 80,
                             fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) =>
-                                Container(
-                              width: 80,
-                              height: 80,
-                              color: Colors.grey[700],
-                              child: Icon(Icons.image_not_supported,
-                                  color: Theme.of(context).iconTheme.color,
-                                  size: 40),
-                            ),
+                            errorBuilder: (context, error, stackTrace) {
+                              debugPrint(
+                                  'RateNowScreen: Failed to load image for ${order.items.first.product.name}: ${order.items.first.product.imageUrl}'); // DEBUG PRINT
+                              return Container(
+                                width: 80,
+                                height: 80,
+                                color: Colors.grey[700],
+                                child: Icon(Icons.image_not_supported,
+                                    color: Theme.of(context).iconTheme.color,
+                                    size: 40),
+                              );
+                            },
                           ),
                         ),
                         const SizedBox(width: 16.0),

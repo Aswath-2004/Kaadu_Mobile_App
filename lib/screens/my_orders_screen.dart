@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:kaadu_organics_app/models.dart'; // For Order and CartItem models
 import 'package:kaadu_organics_app/screens/invoice_screen.dart'; // Added import
 import 'package:kaadu_organics_app/screens/rate_now_screen.dart'; // Added import
+import 'package:flutter/foundation.dart'; // For debugPrint
 
 class MyOrdersScreen extends StatefulWidget {
   const MyOrdersScreen({super.key});
@@ -201,15 +202,18 @@ class OrderCard extends StatelessWidget {
                               width: 50,
                               height: 50,
                               fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) =>
-                                  Container(
-                                width: 50,
-                                height: 50,
-                                color: Colors.grey[700],
-                                child: Icon(Icons.image_not_supported,
-                                    color: Theme.of(context).iconTheme.color,
-                                    size: 25),
-                              ),
+                              errorBuilder: (context, error, stackTrace) {
+                                debugPrint(
+                                    'OrderCard: Failed to load image for ${item.product.name}: ${item.product.imageUrl}'); // DEBUG PRINT
+                                return Container(
+                                  width: 50,
+                                  height: 50,
+                                  color: Colors.grey[700],
+                                  child: Icon(Icons.image_not_supported,
+                                      color: Theme.of(context).iconTheme.color,
+                                      size: 25),
+                                );
+                              },
                             ),
                           ),
                           const SizedBox(width: 12.0),

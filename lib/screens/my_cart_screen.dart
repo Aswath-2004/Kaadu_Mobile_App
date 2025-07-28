@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:kaadu_organics_app/providers/cart_provider.dart'; // Import CartProvider
 import 'package:kaadu_organics_app/services/api_service.dart'; // Import ApiService
 import 'package:kaadu_organics_app/screens/checkout_screen.dart'; // NEW: Import CheckoutScreen
+import 'package:flutter/foundation.dart'; // For debugPrint
 
 class MyCartScreen extends StatefulWidget {
   const MyCartScreen({super.key});
@@ -241,13 +242,17 @@ class CartItemCard extends StatelessWidget {
                 width: 80,
                 height: 80,
                 fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) => Container(
-                  width: 80,
-                  height: 80,
-                  color: Colors.grey[700],
-                  child: const Icon(Icons.image_not_supported,
-                      color: Colors.white),
-                ),
+                errorBuilder: (context, error, stackTrace) {
+                  debugPrint(
+                      'CartItemCard: Failed to load image for ${cartItem.product.name}: ${cartItem.product.imageUrl}'); // DEBUG PRINT
+                  return Container(
+                    width: 80,
+                    height: 80,
+                    color: Colors.grey[700],
+                    child: const Icon(Icons.image_not_supported,
+                        color: Colors.white),
+                  );
+                },
               ),
             ),
             const SizedBox(width: 16.0),

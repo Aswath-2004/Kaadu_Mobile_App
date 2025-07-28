@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:kaadu_organics_app/providers/product_provider.dart';
 import 'package:kaadu_organics_app/providers/wishlist_provider.dart';
 import 'package:kaadu_organics_app/providers/cart_provider.dart'; // NEW: Import CartProvider
+import 'package:flutter/foundation.dart'; // For debugPrint
 
 class HomeScreen extends StatefulWidget {
   final VoidCallback toggleTheme; // Add toggleTheme callback
@@ -230,14 +231,17 @@ class _HomeScreenState extends State<HomeScreen> {
                                           category.imageUrl,
                                           fit: BoxFit.cover,
                                           errorBuilder:
-                                              (context, error, stackTrace) =>
-                                                  Container(
-                                            color: Colors.grey[700],
-                                            child: const Icon(
-                                                Icons.broken_image,
-                                                color: Colors.white,
-                                                size: 30),
-                                          ),
+                                              (context, error, stackTrace) {
+                                            debugPrint(
+                                                'Error loading category image for ${category.name}: ${category.imageUrl}'); // DEBUG PRINT
+                                            return Container(
+                                              color: Colors.grey[700],
+                                              child: const Icon(
+                                                  Icons.broken_image,
+                                                  color: Colors.white,
+                                                  size: 30),
+                                            );
+                                          },
                                         ),
                                       ),
                                     ),
@@ -471,7 +475,7 @@ class ProductCard extends StatelessWidget {
                           width: double.infinity,
                           errorBuilder: (context, error, stackTrace) {
                             debugPrint(
-                                'Failed to load image for product ${product.name}: ${product.imageUrl}'); // Debug print
+                                'ProductCard: Failed to load image for product ${product.name}: ${product.imageUrl}'); // DEBUG PRINT
                             return Container(
                               color: Colors.grey[700],
                               child: const Icon(Icons.image_not_supported,

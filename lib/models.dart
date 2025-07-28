@@ -1,5 +1,6 @@
 // lib/models.dart
 import 'package:flutter/material.dart'; // Required for ValueNotifier
+import 'package:flutter/foundation.dart'; // For debugPrint
 
 class Product {
   final String id;
@@ -34,12 +35,29 @@ class Product {
 
   // Add a factory constructor to parse from API JSON
   factory Product.fromJson(Map<String, dynamic> json) {
+    String parsedImageUrl;
+    if (json.containsKey('imageUrl') &&
+        json['imageUrl'] is String &&
+        json['imageUrl'].isNotEmpty) {
+      // If 'imageUrl' is directly available (e.g., from Firestore storage or dummy data)
+      parsedImageUrl = json['imageUrl'];
+    } else if (json['images'] != null &&
+        json['images'].isNotEmpty &&
+        json['images'][0]['src'] is String) {
+      // If 'images' array is available (e.g., from WooCommerce API response)
+      parsedImageUrl = json['images'][0]['src'];
+    } else {
+      // Fallback if no valid image URL is found
+      parsedImageUrl = 'https://placehold.co/600x400?text=No+Image';
+    }
+
+    debugPrint(
+        'Product.fromJson: Parsing product ${json['name'] ?? json['id']}, Final Image URL: $parsedImageUrl'); // Added debug print
+
     return Product(
       id: json['id'].toString(),
       name: json['name'] ?? 'N/A',
-      imageUrl: json['images'] != null && json['images'].isNotEmpty
-          ? json['images'][0]['src'] // Take the first image URL
-          : 'https://placehold.co/600x400?text=No+Image',
+      imageUrl: parsedImageUrl,
       price: double.tryParse(json['price'].toString()) ?? 0.0,
       originalPrice: double.tryParse(json['regular_price'].toString()) ?? 0.0,
       farmShop: 'Kaadu Organics Store', // Default or fetch from product meta
@@ -98,7 +116,8 @@ class Category {
         json['image']['src'].isNotEmpty) {
       imageUrl = json['image']['src'];
     }
-
+    debugPrint(
+        'Category.fromJson: Parsing category ${json['name']}, Image URL: $imageUrl'); // DEBUG PRINT
     return Category(
       id: json['id'].toString(), // Categories also have an ID
       name: json['name'] ?? 'N/A',

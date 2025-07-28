@@ -7,6 +7,7 @@ import 'package:carousel_slider/carousel_slider.dart'
 import 'package:provider/provider.dart'; // NEW: Import Provider
 import 'package:kaadu_organics_app/providers/cart_provider.dart'; // NEW: Import CartProvider
 import 'package:kaadu_organics_app/providers/wishlist_provider.dart'; // Import WishlistProvider
+import 'package:flutter/foundation.dart'; // For debugPrint
 
 class ProductDetailScreen extends StatefulWidget {
   const ProductDetailScreen({super.key});
@@ -172,13 +173,16 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                         child: Image.network(
                           i,
                           fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) =>
-                              Container(
-                            color: Colors.grey[700],
-                            child: Icon(Icons.image_not_supported,
-                                color: Theme.of(context).iconTheme.color,
-                                size: 80),
-                          ),
+                          errorBuilder: (context, error, stackTrace) {
+                            debugPrint(
+                                'ProductDetailScreen: Failed to load image for ${product.name}: $i'); // DEBUG PRINT
+                            return Container(
+                              color: Colors.grey[700],
+                              child: Icon(Icons.image_not_supported,
+                                  color: Theme.of(context).iconTheme.color,
+                                  size: 80),
+                            );
+                          },
                         ),
                       ),
                     );

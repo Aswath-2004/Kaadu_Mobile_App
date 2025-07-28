@@ -4,6 +4,8 @@ import 'package:kaadu_organics_app/models.dart';
 import 'package:kaadu_organics_app/screens/category_products_screen.dart'; // Import the new screen
 import 'package:provider/provider.dart';
 import 'package:kaadu_organics_app/providers/product_provider.dart';
+import 'package:flutter/foundation.dart'
+    hide Category; // For debugPrint, hiding Category
 
 class CategoriesScreen extends StatelessWidget {
   const CategoriesScreen({super.key});
@@ -99,12 +101,17 @@ class CategoriesScreen extends StatelessWidget {
                                         category.imageUrl,
                                         fit: BoxFit.cover,
                                         errorBuilder:
-                                            (context, error, stackTrace) =>
-                                                Container(
-                                          color: Colors.grey[700],
-                                          child: const Icon(Icons.broken_image,
-                                              color: Colors.white, size: 40),
-                                        ),
+                                            (context, error, stackTrace) {
+                                          debugPrint(
+                                              'CategoriesScreen: Failed to load category image for ${category.name}: ${category.imageUrl}'); // DEBUG PRINT
+                                          return Container(
+                                            color: Colors.grey[700],
+                                            child: const Icon(
+                                                Icons.broken_image,
+                                                color: Colors.white,
+                                                size: 40),
+                                          );
+                                        },
                                       ),
                                     ),
                                   ),

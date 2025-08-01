@@ -85,4 +85,5 @@ class DefaultFirebaseOptions {
     storageBucket: 'kaadu-wishlist.firebasestorage.app',
     measurementId: 'G-L1CWMMHWY4',
   );
+
 }

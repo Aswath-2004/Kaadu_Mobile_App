@@ -32,6 +32,7 @@ import 'package:kaadu_organics_app/providers/wishlist_provider.dart';
 import 'package:kaadu_organics_app/providers/cart_provider.dart';
 import 'package:kaadu_organics_app/providers/address_provider.dart'; // NEW: Import AddressProvider
 import 'package:kaadu_organics_app/providers/payment_method_provider.dart'; // NEW: Import PaymentMethodProvider
+import 'package:kaadu_organics_app/firebase_options.dart'; // NEW: Import Firebase options
 
 // Firebase imports
 import 'package:firebase_core/firebase_core.dart';
@@ -47,86 +48,15 @@ import 'dart:convert';
 // Using String.fromEnvironment to correctly access environment variables in Dart.
 const String appId =
     String.fromEnvironment('APP_ID', defaultValue: 'default-app-id');
-const String firebaseConfigString =
-    String.fromEnvironment('FIREBASE_CONFIG', defaultValue: '{}');
-const String initialAuthToken =
-    String.fromEnvironment('INITIAL_AUTH_TOKEN', defaultValue: '');
 
 void main() async {
   // Ensure Flutter binding is initialized
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize Firebase
-  try {
-    final Map<String, dynamic> firebaseConfig =
-        json.decode(firebaseConfigString);
-
-    await Firebase.initializeApp(
-      options: FirebaseOptions(
-        apiKey: firebaseConfig['apiKey'] ?? '',
-        appId: firebaseConfig['appId'] ?? '',
-        messagingSenderId: firebaseConfig['messagingSenderId'] ?? '',
-        projectId: firebaseConfig['projectId'] ?? '',
-        authDomain: firebaseConfig['authDomain'] ?? '',
-        storageBucket: firebaseConfig['storageBucket'] ?? '',
-      ),
-    );
-
-    // Authenticate anonymously if no initial token, or with token if provided
-    final auth = FirebaseAuth.instance;
-    if (initialAuthToken.isNotEmpty) {
-      await auth.signInWithCustomToken(initialAuthToken);
-    } else {
-      await auth.signInAnonymously();
-    }
-  } catch (e) {
-    debugPrint('Error initializing Firebase: $e');
-    // Handle Firebase initialization error gracefully, e.g., show an error message
-  }
-
   // Set preferred orientations to portrait only
   SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp])
       .then((_) {
-    runApp(
-      // Wrap your app with MultiProvider
-      MultiProvider(
-        providers: [
-          ChangeNotifierProvider(create: (context) => ProductProvider()),
-          ChangeNotifierProvider(
-            create: (context) => WishlistProvider(
-              firestore: FirebaseFirestore.instance,
-              auth: FirebaseAuth.instance,
-              appId: appId,
-            ),
-          ),
-          // Add CartProvider
-          ChangeNotifierProvider(
-            create: (context) => CartProvider(
-              firestore: FirebaseFirestore.instance,
-              auth: FirebaseAuth.instance,
-              appId: appId,
-            ),
-          ),
-          // NEW: Add AddressProvider
-          ChangeNotifierProvider(
-            create: (context) => AddressProvider(
-              firestore: FirebaseFirestore.instance,
-              auth: FirebaseAuth.instance,
-              appId: appId,
-            ),
-          ),
-          // NEW: Add PaymentMethodProvider
-          ChangeNotifierProvider(
-            create: (context) => PaymentMethodProvider(
-              firestore: FirebaseFirestore.instance,
-              auth: FirebaseAuth.instance,
-              appId: appId,
-            ),
-          ),
-        ],
-        child: const KaaduOrganicsApp(),
-      ),
-    );
+    runApp(const KaaduOrganicsApp());
   });
 }
 
@@ -138,7 +68,42 @@ class KaaduOrganicsApp extends StatefulWidget {
 }
 
 class _KaaduOrganicsAppState extends State<KaaduOrganicsApp> {
+  // Add a state variable to track the initialization status of Firebase
+  bool _firebaseInitialized = false;
+  // Add a state variable to track if there was an error
+  bool _hasError = false;
+
   ThemeMode _themeMode = ThemeMode.dark; // Default to dark mode
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeFirebase();
+  }
+
+  // Asynchronous function to initialize Firebase
+  Future<void> _initializeFirebase() async {
+    try {
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions
+            .currentPlatform, // Use the user's provided config
+      );
+
+      // Authenticate anonymously
+      await FirebaseAuth.instance.signInAnonymously();
+
+      // Update state to reflect successful initialization
+      setState(() {
+        _firebaseInitialized = true;
+      });
+    } catch (e) {
+      debugPrint('Error initializing Firebase: $e');
+      // Update state to reflect failed initialization
+      setState(() {
+        _hasError = true;
+      });
+    }
+  }
 
   void toggleTheme() {
     setState(() {
@@ -149,203 +114,280 @@ class _KaaduOrganicsAppState extends State<KaaduOrganicsApp> {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Kaadu Organics',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        // Light theme properties
-        brightness: Brightness.light,
-        primaryColor: const Color(0xFFFFFFFF), // White background
-        scaffoldBackgroundColor: const Color(0xFFFFFFFF), // White background
-        cardColor: const Color(0xFFF0F0F0), // Light grey for cards
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Color(0xFFFFFFFF),
-          elevation: 0,
-          iconTheme: IconThemeData(color: Colors.black),
-          titleTextStyle: TextStyle(
-            color: Colors.black,
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        textTheme: GoogleFonts.interTextTheme(
-          Theme.of(context).textTheme.apply(
-                bodyColor: Colors.black,
-                displayColor: Colors.black,
+    if (_hasError) {
+      // If there was an error, display a simple message instead of the app
+      return MaterialApp(
+        debugShowCheckedModeBanner: false,
+        home: Scaffold(
+          body: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: Text(
+                'Could not connect to Firebase. Please check your configuration and try again.',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.inter(fontSize: 18, color: Colors.red),
               ),
-        ),
-        inputDecorationTheme: InputDecorationTheme(
-          filled: true,
-          fillColor: const Color(0xFFE0E0E0),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12.0),
-            borderSide: BorderSide.none,
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12.0),
-            borderSide: BorderSide.none,
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12.0),
-            borderSide: const BorderSide(color: Color(0xFF5CB85C), width: 1.5),
-          ),
-          hintStyle: TextStyle(color: Colors.black.withAlpha(153)),
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
-        ),
-        elevatedButtonTheme: ElevatedButtonThemeData(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF5CB85C), // Green button
-            foregroundColor: Colors.white,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12.0),
             ),
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
-            textStyle: const TextStyle(
-              fontSize: 16,
+          ),
+        ),
+      );
+    }
+
+    if (!_firebaseInitialized) {
+      // Show a loading indicator while Firebase is initializing
+      return MaterialApp(
+        debugShowCheckedModeBanner: false,
+        home: Scaffold(
+          body: Center(
+            child: CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(
+                _themeMode == ThemeMode.dark
+                    ? const Color(0xFF5CB85C)
+                    : const Color(0xFF5CB85C),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    // After successful initialization, run the main app with providers
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (context) => ProductProvider()),
+        ChangeNotifierProvider(
+          create: (context) => WishlistProvider(
+            firestore: FirebaseFirestore.instance,
+            auth: FirebaseAuth.instance,
+            appId: appId,
+          ),
+        ),
+        // Add CartProvider
+        ChangeNotifierProvider(
+          create: (context) => CartProvider(
+            firestore: FirebaseFirestore.instance,
+            auth: FirebaseAuth.instance,
+            appId: appId,
+          ),
+        ),
+        // NEW: Add AddressProvider
+        ChangeNotifierProvider(
+          create: (context) => AddressProvider(
+            firestore: FirebaseFirestore.instance,
+            auth: FirebaseAuth.instance,
+            appId: appId,
+          ),
+        ),
+        // NEW: Add PaymentMethodProvider
+        ChangeNotifierProvider(
+          create: (context) => PaymentMethodProvider(
+            firestore: FirebaseFirestore.instance,
+            auth: FirebaseAuth.instance,
+            appId: appId,
+          ),
+        ),
+      ],
+      child: MaterialApp(
+        title: 'Kaadu Organics',
+        debugShowCheckedModeBanner: false,
+        theme: ThemeData(
+          // Light theme properties
+          brightness: Brightness.light,
+          primaryColor: const Color(0xFFFFFFFF), // White background
+          scaffoldBackgroundColor: const Color(0xFFFFFFFF), // White background
+          cardColor: const Color(0xFFF0F0F0), // Light grey for cards
+          appBarTheme: const AppBarTheme(
+            backgroundColor: Color(0xFFFFFFFF),
+            elevation: 0,
+            iconTheme: IconThemeData(color: Colors.black),
+            titleTextStyle: TextStyle(
+              color: Colors.black,
+              fontSize: 20,
               fontWeight: FontWeight.bold,
             ),
           ),
-        ),
-        textButtonTheme: TextButtonThemeData(
-          style: TextButton.styleFrom(
-            foregroundColor: const Color(0xFF5CB85C),
-            textStyle: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-            ),
+          textTheme: GoogleFonts.interTextTheme(
+            Theme.of(context).textTheme.apply(
+                  bodyColor: Colors.black,
+                  displayColor: Colors.black,
+                ),
           ),
-        ),
-        bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-          backgroundColor: Color(0xFFF0F0F0), // Lighter grey for nav bar
-          selectedItemColor: Color(0xFF5CB85C), // Green for selected item
-          unselectedItemColor: Colors.black54, // Black for unselected
-          type: BottomNavigationBarType.fixed,
-          selectedLabelStyle: TextStyle(fontSize: 12),
-          unselectedLabelStyle: TextStyle(fontSize: 12),
-        ),
-      ),
-      darkTheme: ThemeData(
-        // Dark theme properties (your original theme)
-        brightness: Brightness.dark,
-        primaryColor: const Color(0xFF1E2125), // Dark background
-        scaffoldBackgroundColor: const Color(0xFF1E2125), // Dark background
-        cardColor: const Color(0xFF2C2F33), // Slightly lighter dark for cards
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Color(0xFF1E2125),
-          elevation: 0,
-          iconTheme: IconThemeData(color: Colors.white),
-          titleTextStyle: TextStyle(
-            color: Colors.white,
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        textTheme: GoogleFonts.interTextTheme(
-          Theme.of(context).textTheme.apply(
-                bodyColor: Colors.white,
-                displayColor: Colors.white,
-              ),
-        ),
-        inputDecorationTheme: InputDecorationTheme(
-          filled: true,
-          fillColor: const Color(0xFF2C2F33),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12.0),
-            borderSide: BorderSide.none,
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12.0),
-            borderSide: BorderSide.none,
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12.0),
-            borderSide: const BorderSide(color: Color(0xFF5CB85C), width: 1.5),
-          ),
-          hintStyle: TextStyle(color: Colors.white.withAlpha(153)),
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
-        ),
-        elevatedButtonTheme: ElevatedButtonThemeData(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF5CB85C), // Green button
-            foregroundColor: Colors.white,
-            shape: RoundedRectangleBorder(
+          inputDecorationTheme: InputDecorationTheme(
+            filled: true,
+            fillColor: const Color(0xFFE0E0E0),
+            border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12.0),
+              borderSide: BorderSide.none,
             ),
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
-            textStyle: const TextStyle(
-              fontSize: 16,
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12.0),
+              borderSide: BorderSide.none,
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12.0),
+              borderSide:
+                  const BorderSide(color: Color(0xFF5CB85C), width: 1.5),
+            ),
+            hintStyle: TextStyle(color: Colors.black.withAlpha(153)),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+          ),
+          elevatedButtonTheme: ElevatedButtonThemeData(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF5CB85C), // Green button
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12.0),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+              textStyle: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          textButtonTheme: TextButtonThemeData(
+            style: TextButton.styleFrom(
+              foregroundColor: const Color(0xFF5CB85C),
+              textStyle: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+            backgroundColor: Color(0xFFF0F0F0), // Lighter grey for nav bar
+            selectedItemColor: Color(0xFF5CB85C), // Green for selected item
+            unselectedItemColor: Colors.black54, // Black for unselected
+            type: BottomNavigationBarType.fixed,
+            selectedLabelStyle: TextStyle(fontSize: 12),
+            unselectedLabelStyle: TextStyle(fontSize: 12),
+          ),
+        ),
+        darkTheme: ThemeData(
+          // Dark theme properties (your original theme)
+          brightness: Brightness.dark,
+          primaryColor: const Color(0xFF1E2125), // Dark background
+          scaffoldBackgroundColor: const Color(0xFF1E2125), // Dark background
+          cardColor: const Color(0xFF2C2F33), // Slightly lighter dark for cards
+          appBarTheme: const AppBarTheme(
+            backgroundColor: Color(0xFF1E2125),
+            elevation: 0,
+            iconTheme: IconThemeData(color: Colors.white),
+            titleTextStyle: TextStyle(
+              color: Colors.white,
+              fontSize: 20,
               fontWeight: FontWeight.bold,
             ),
           ),
-        ),
-        textButtonTheme: TextButtonThemeData(
-          style: TextButton.styleFrom(
-            foregroundColor: const Color(0xFF5CB85C),
-            textStyle: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
+          textTheme: GoogleFonts.interTextTheme(
+            Theme.of(context).textTheme.apply(
+                  bodyColor: Colors.white,
+                  displayColor: Colors.white,
+                ),
+          ),
+          inputDecorationTheme: InputDecorationTheme(
+            filled: true,
+            fillColor: const Color(0xFF2C2F33),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12.0),
+              borderSide: BorderSide.none,
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12.0),
+              borderSide: BorderSide.none,
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12.0),
+              borderSide:
+                  const BorderSide(color: Color(0xFF5CB85C), width: 1.5),
+            ),
+            hintStyle: TextStyle(color: Colors.white.withAlpha(153)),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+          ),
+          elevatedButtonTheme: ElevatedButtonThemeData(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF5CB85C), // Green button
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12.0),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+              textStyle: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
+          textButtonTheme: TextButtonThemeData(
+            style: TextButton.styleFrom(
+              foregroundColor: const Color(0xFF5CB85C),
+              textStyle: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+            backgroundColor: Color(0xFF2C2F33), // Darker grey for nav bar
+            selectedItemColor: Color(0xFF5CB85C), // Green for selected item
+            unselectedItemColor: Colors.white54, // White for unselected
+            type: BottomNavigationBarType.fixed,
+            selectedLabelStyle: TextStyle(fontSize: 12),
+            unselectedLabelStyle: TextStyle(fontSize: 12),
+          ),
         ),
-        bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-          backgroundColor: Color(0xFF2C2F33), // Darker grey for nav bar
-          selectedItemColor: Color(0xFF5CB85C), // Green for selected item
-          unselectedItemColor: Colors.white54, // White for unselected
-          type: BottomNavigationBarType.fixed,
-          selectedLabelStyle: TextStyle(fontSize: 12),
-          unselectedLabelStyle: TextStyle(fontSize: 12),
-        ),
+        themeMode: _themeMode, // Use the theme mode state
+        initialRoute: '/',
+        routes: {
+          '/': (context) =>
+              MainScreenWrapper(toggleTheme: toggleTheme), // Pass toggleTheme
+          '/product_detail': (context) => const ProductDetailScreen(),
+          '/cart': (context) => const MyCartScreen(),
+          '/categories': (context) => const CategoriesScreen(),
+          '/profile': (context) => const ProfileScreen(),
+          '/search': (context) => const SearchScreen(),
+          '/filter': (context) => const FilterScreen(),
+          '/my_orders': (context) => const MyOrdersScreen(),
+          '/invoice': (context) => InvoiceScreen(
+              order: ModalRoute.of(context)?.settings.arguments as Order?),
+          '/rate_now': (context) => RateNowScreen(
+              order: ModalRoute.of(context)?.settings.arguments as Order?),
+          '/edit_profile': (context) => const EditProfileScreen(),
+          '/addresses': (context) => const AddressScreen(), // New route
+          '/add_edit_address': (context) => AddEditAddressScreen(
+                address: ModalRoute.of(context)?.settings.arguments as Address?,
+              ), // New route with optional argument
+          '/wishlist': (context) =>
+              const WishlistScreen(), // New import for WishlistScreen
+          '/notifications': (context) =>
+              const NotificationsScreen(), // New import for NotificationsScreen
+          '/payment_methods': (context) =>
+              const PaymentMethodsScreen(), // New import for PaymentMethodsScreen
+          '/add_edit_payment_method': (context) => AddEditPaymentMethodScreen(
+                paymentMethod: ModalRoute.of(context)?.settings.arguments
+                    as PaymentMethod?,
+              ), // New route for AddEditPaymentMethodScreen
+          '/add_new_account': (context) =>
+              const AddNewAccountScreen(), // New route for AddNewAccountScreen
+          '/become_seller': (context) => BecomeSellerScreen(
+                // <--- UPDATED ROUTE
+                userAccount:
+                    ModalRoute.of(context)?.settings.arguments as UserAccount?,
+              ),
+          '/seller_dashboard': (context) => const SellerDashboardScreen(),
+          '/seller_details': (context) => SellerDetailsScreen(
+                sellerAccount:
+                    ModalRoute.of(context)?.settings.arguments as UserAccount,
+              ),
+          '/category_products': (context) => CategoryProductsScreen(
+                category:
+                    ModalRoute.of(context)?.settings.arguments as Category,
+              ),
+          '/checkout': (context) => const CheckoutScreen(), // NEW ROUTE
+        },
       ),
-      themeMode: _themeMode, // Use the theme mode state
-      initialRoute: '/',
-      routes: {
-        '/': (context) =>
-            MainScreenWrapper(toggleTheme: toggleTheme), // Pass toggleTheme
-        '/product_detail': (context) => const ProductDetailScreen(),
-        '/cart': (context) => const MyCartScreen(),
-        '/categories': (context) => const CategoriesScreen(),
-        '/profile': (context) => const ProfileScreen(),
-        '/search': (context) => const SearchScreen(),
-        '/filter': (context) => const FilterScreen(),
-        '/my_orders': (context) => const MyOrdersScreen(),
-        '/invoice': (context) => InvoiceScreen(
-            order: ModalRoute.of(context)?.settings.arguments as Order?),
-        '/rate_now': (context) => RateNowScreen(
-            order: ModalRoute.of(context)?.settings.arguments as Order?),
-        '/edit_profile': (context) => const EditProfileScreen(),
-        '/addresses': (context) => const AddressScreen(), // New route
-        '/add_edit_address': (context) => AddEditAddressScreen(
-              address: ModalRoute.of(context)?.settings.arguments as Address?,
-            ), // New route with optional argument
-        '/wishlist': (context) =>
-            const WishlistScreen(), // New import for WishlistScreen
-        '/notifications': (context) =>
-            const NotificationsScreen(), // New import for NotificationsScreen
-        '/payment_methods': (context) =>
-            const PaymentMethodsScreen(), // New import for PaymentMethodsScreen
-        '/add_edit_payment_method': (context) => AddEditPaymentMethodScreen(
-              paymentMethod:
-                  ModalRoute.of(context)?.settings.arguments as PaymentMethod?,
-            ), // New route for AddEditPaymentMethodScreen
-        '/add_new_account': (context) =>
-            const AddNewAccountScreen(), // New route for AddNewAccountScreen
-        '/become_seller': (context) => BecomeSellerScreen(
-              // <--- UPDATED ROUTE
-              userAccount:
-                  ModalRoute.of(context)?.settings.arguments as UserAccount?,
-            ),
-        '/seller_dashboard': (context) => const SellerDashboardScreen(),
-        '/seller_details': (context) => SellerDetailsScreen(
-              sellerAccount:
-                  ModalRoute.of(context)?.settings.arguments as UserAccount,
-            ),
-        '/category_products': (context) => CategoryProductsScreen(
-              category: ModalRoute.of(context)?.settings.arguments as Category,
-            ),
-        '/checkout': (context) => const CheckoutScreen(), // NEW ROUTE
-      },
     );
   }
 }

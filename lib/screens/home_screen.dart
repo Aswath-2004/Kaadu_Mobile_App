@@ -1,14 +1,15 @@
 // lib/screens/home_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:kaadu_organics_app/models.dart';
 import 'package:provider/provider.dart';
 import 'package:kaadu_organics_app/providers/product_provider.dart';
 import 'package:kaadu_organics_app/providers/wishlist_provider.dart';
-import 'package:kaadu_organics_app/providers/cart_provider.dart'; // NEW: Import CartProvider
-import 'package:kaadu_organics_app/providers/address_provider.dart'; // NEW: Import AddressProvider
+import 'package:kaadu_organics_app/providers/cart_provider.dart';
+import 'package:kaadu_organics_app/providers/address_provider.dart';
 
 class HomeScreen extends StatefulWidget {
-  final VoidCallback toggleTheme; // Add toggleTheme callback
+  final VoidCallback toggleTheme;
   const HomeScreen({super.key, required this.toggleTheme});
 
   @override
@@ -33,10 +34,8 @@ class _HomeScreenState extends State<HomeScreen> {
       Provider.of<ProductProvider>(context, listen: false).fetchCategories();
       // Fetch wishlist and cart when HomeScreen initializes
       Provider.of<WishlistProvider>(context, listen: false).fetchWishlist();
-      Provider.of<CartProvider>(context, listen: false)
-          .fetchCart(); // NEW: Fetch cart
-      Provider.of<AddressProvider>(context, listen: false)
-          .fetchAddresses(); // NEW: Fetch addresses
+      Provider.of<CartProvider>(context, listen: false).fetchCart();
+      Provider.of<AddressProvider>(context, listen: false).fetchAddresses();
     });
   }
 
@@ -62,10 +61,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
-                    color: Theme.of(context)
-                        .textTheme
-                        .bodyLarge
-                        ?.color, // Dynamic text color
+                    color: Theme.of(context).textTheme.bodyLarge?.color,
                   ),
                 );
               },
@@ -98,13 +94,15 @@ class _HomeScreenState extends State<HomeScreen> {
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        Icon(Icons.keyboard_arrow_down_rounded,
-                            size: 24,
-                            color: Theme.of(context)
-                                .textTheme
-                                .bodySmall
-                                ?.color
-                                ?.withAlpha((255 * 0.5).round())),
+                        Icon(
+                          Icons.keyboard_arrow_down_rounded,
+                          size: 24,
+                          color: Theme.of(context)
+                              .textTheme
+                              .bodySmall
+                              ?.color
+                              ?.withAlpha((255 * 0.5).round()),
+                        ),
                       ],
                     ),
                   ),
@@ -147,9 +145,9 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-      body: productProvider.isLoading // <--- Added loading indicator
+      body: productProvider.isLoading
           ? const Center(child: CircularProgressIndicator())
-          : productProvider.errorMessage != null // <--- Added error display
+          : productProvider.errorMessage != null
               ? Center(child: Text('Error: ${productProvider.errorMessage}'))
               : SingleChildScrollView(
                   padding: const EdgeInsets.all(16.0),
@@ -190,11 +188,9 @@ class _HomeScreenState extends State<HomeScreen> {
                         height: 100, // Height for category icons
                         child: ListView.builder(
                           scrollDirection: Axis.horizontal,
-                          itemCount: productProvider.categories
-                              .length, // <--- NOW USES FETCHED CATEGORIES
+                          itemCount: productProvider.categories.length,
                           itemBuilder: (context, index) {
-                            final category = productProvider.categories[
-                                index]; // <--- NOW USES FETCHED CATEGORIES
+                            final category = productProvider.categories[index];
                             return GestureDetector(
                               onTap: () {
                                 // Navigate to category products screen
@@ -211,8 +207,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                       height: 60,
                                       decoration: BoxDecoration(
                                         shape: BoxShape.circle,
-                                        color: Theme.of(context)
-                                            .cardColor, // Use card color or a light background
+                                        color: Theme.of(context).cardColor,
                                         boxShadow: [
                                           BoxShadow(
                                             color:
@@ -265,8 +260,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       Container(
                         padding: const EdgeInsets.all(16.0),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF5CB85C).withAlpha(
-                              (255 * 0.2).round()), // Fixed withOpacity
+                          color: const Color(0xFF5CB85C).withOpacity(0.2),
                           borderRadius: BorderRadius.circular(16.0),
                         ),
                         child: Row(
@@ -292,8 +286,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                         .titleLarge
                                         ?.copyWith(
                                           fontWeight: FontWeight.bold,
-                                          color: const Color(
-                                              0xFF5CB85C), // Green text
+                                          color: const Color(0xFF5CB85C),
                                         ),
                                   ),
                                   const SizedBox(height: 8.0),
@@ -323,7 +316,6 @@ class _HomeScreenState extends State<HomeScreen> {
                             ClipRRect(
                               borderRadius: BorderRadius.circular(12.0),
                               child: Image.network(
-                                // Updated image URL for the offer banner
                                 'https://img.pikbest.com/origin/10/06/32/65bpIkbEsTIfr.png!bw700',
                                 width: 120,
                                 height: 120,
@@ -367,15 +359,11 @@ class _HomeScreenState extends State<HomeScreen> {
                         height: 220, // Height for product cards
                         child: ListView.builder(
                           scrollDirection: Axis.horizontal,
-                          itemCount: productProvider.products
-                              .take(3)
-                              .length, // <--- NOW USES FETCHED PRODUCTS
+                          itemCount: productProvider.products.take(3).length,
                           itemBuilder: (context, index) {
                             final product = productProvider.products[index];
                             return SizedBox(
-                              // Wrap ProductCard in a SizedBox to give it a defined width
-                              width:
-                                  180, // Example width for each product card in the horizontal list
+                              width: 180,
                               child: ProductCard(product: product),
                             );
                           },
@@ -405,18 +393,15 @@ class _HomeScreenState extends State<HomeScreen> {
                       const SizedBox(height: 16.0),
                       GridView.builder(
                         shrinkWrap: true,
-                        physics:
-                            const NeverScrollableScrollPhysics(), // Disable gridview scrolling
+                        physics: const NeverScrollableScrollPhysics(),
                         gridDelegate:
                             const SliverGridDelegateWithFixedCrossAxisCount(
                           crossAxisCount: 2,
                           crossAxisSpacing: 16.0,
                           mainAxisSpacing: 16.0,
-                          childAspectRatio:
-                              0.75, // Adjust as needed for card size
+                          childAspectRatio: 0.75,
                         ),
-                        itemCount: productProvider
-                            .products.length, // <--- NOW USES FETCHED PRODUCTS
+                        itemCount: productProvider.products.length,
                         itemBuilder: (context, index) {
                           final product = productProvider.products[index];
                           return ProductCard(product: product);
@@ -437,8 +422,7 @@ class ProductCard extends StatelessWidget {
   Widget build(BuildContext context) {
     // Access the WishlistProvider and CartProvider
     final wishlistProvider = Provider.of<WishlistProvider>(context);
-    final cartProvider =
-        Provider.of<CartProvider>(context); // NEW: Access CartProvider
+    final cartProvider = Provider.of<CartProvider>(context);
 
     return GestureDetector(
       onTap: () {
